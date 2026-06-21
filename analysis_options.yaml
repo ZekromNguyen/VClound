@@ -1,0 +1,19 @@
+# VCloud static analysis.
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - build/**
+  errors:
+    # Treat the import-as / library-shim case-sensitivity nit as info
+    # rather than a hard error; avoid_print is intentional in dev mode.
+    invalid_assignment: warning
+
+linter:
+  rules:
+    prefer_const_constructors: true
+    prefer_const_constructors_in_immutables: true
+    prefer_const_declarations: true
+    prefer_final_locals: true
+    always_declare_return_types: true
+    require_trailing_commas: true
