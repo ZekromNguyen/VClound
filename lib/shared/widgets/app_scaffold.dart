@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Standard scaffold for top-level tabs (Home/Chat/...). Draws the
-/// app bar and the bottom-nav shell. Inputs go through GoRouter so
-/// the `destinations` map aligns with route paths.
+/// app bar and the bottom-nav shell. The shell auto-detects which tab is
+/// active from GoRouterState, so screens only have to set [title] and
+/// [body]; the bottom bar is hidden on non-tab routes (login, signup, ...).
 class AppScaffold extends StatelessWidget {
   const AppScaffold({
     super.key,
@@ -11,8 +13,6 @@ class AppScaffold extends StatelessWidget {
     required this.body,
     this.actions,
     this.floatingActionButton,
-    this.currentIndex,
-    this.onTabSelected,
     this.bottomNavigationBarOverride,
     this.resizeToAvoidBottomInset,
   });
@@ -21,42 +21,54 @@ class AppScaffold extends StatelessWidget {
   final Widget body;
   final List<Widget>? actions;
   final Widget? floatingActionButton;
-  final int? currentIndex;
-  final ValueChanged<int>? onTabSelected;
   final Widget? bottomNavigationBarOverride;
   final bool? resizeToAvoidBottomInset;
 
   static const _tabs = <_TabSpec>[
-    _TabSpec(label: 'Home', icon: Icons.home_outlined, selected: Icons.home),
-    _TabSpec(
-        label: 'Chat', icon: Icons.chat_bubble_outline, selected: Icons.chat_bubble),
-    _TabSpec(
-        label: 'Attendance',
-        icon: Icons.flag_outlined,
-        selected: Icons.flag),
-    _TabSpec(
-        label: 'Timesheet', icon: Icons.timer_outlined, selected: Icons.timer),
-    _TabSpec(
-        label: 'Tickets', icon: Icons.task_alt_outlined, selected: Icons.task_alt),
+    _TabSpec(label: 'Home', path: '/home', icon: Icons.home_outlined, selected: Icons.home),
+    _TabSpec(label: 'Chat', path: '/chat', icon: Icons.chat_bubble_outline, selected: Icons.chat_bubble),
+    _TabSpec(label: 'Attendance', path: '/attendance', icon: Icons.flag_outlined, selected: Icons.flag),
+    _TabSpec(label: 'Timesheet', path: '/timesheet', icon: Icons.timer_outlined, selected: Icons.timer),
+    _TabSpec(label: 'Tickets', path: '/tickets', icon: Icons.task_alt_outlined, selected: Icons.task_alt),
   ];
 
   @override
   Widget build(BuildContext context) {
-    Widget bottom = bottomNavigationBarOverride ??
-        BottomNavigationBar(
-          currentIndex: currentIndex ?? 0,
-          onTap: onTabSelected,
-          type: BottomNavigationBarType.fixed,
-          showUnselectedLabels: false,
-          items: [
-            for (final t in _tabs)
-              BottomNavigationBarItem(
-                icon: Icon(t.icon),
-                label: t.label,
-                activeIcon: Icon(t.selected),
-              ),
-          ],
-        );
+    // Map the current GoRouter location to one of the tab paths so the
+    // shell can highlight the right tab and route user taps to the right
+    // path. Any path prefixed by a tab path (e.g. `/chat/abc` → Chat) still
+    // belongs to that tab; paths like `/login`, `/signup` map to no tab
+    // and we hide the bar entirely.
+    final loc = GoRouterState.of(context).matchedLocation;
+    final activeIndex = () {
+      for (var i = 0; i < _tabs.length; i++) {
+        final p = _tabs[i].path;
+        if (loc == p || loc.startsWith('$p/')) return i;
+      }
+      return null;
+    }();
+
+    final Widget bottom = bottomNavigationBarOverride ?? (activeIndex == null
+        ? const SizedBox.shrink()
+        : BottomNavigationBar(
+            currentIndex: activeIndex,
+            onTap: (i) {
+              // go() replaces the route stack with the tab's root, which
+              // matches the existing tab-by-context.go wiring used elsewhere.
+              context.go(_tabs[i].path);
+            },
+            type: BottomNavigationBarType.fixed,
+            showUnselectedLabels: false,
+            items: [
+              for (final t in _tabs)
+                BottomNavigationBarItem(
+                  icon: Icon(t.icon),
+                  label: t.label,
+                  activeIcon: Icon(t.selected),
+                ),
+            ],
+          ));
+
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
@@ -73,10 +85,12 @@ class AppScaffold extends StatelessWidget {
 class _TabSpec {
   const _TabSpec({
     required this.label,
+    required this.path,
     required this.icon,
     required this.selected,
   });
   final String label;
+  final String path;
   final IconData icon;
   final IconData selected;
 }

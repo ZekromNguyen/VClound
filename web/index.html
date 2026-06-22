@@ -56,17 +56,24 @@
  </style>
 </head>
 <body>
-  <!-- Passkeys Web SDK (required for flutter_passkeys on web).
-       Note: keep the closing</script> on the SAME line as the src= attribute;
-       some browsers treat a stray ">" before</script> as content. -->
-  <script src="https://github.com/corbado/flutter-passkeys/releases/download/2.4.0/bundle.js</script>
+  <!-- Passkeys Web SDK (required by the transitive `passkeys` package that
+       supabase_flutter pulls in). Must load SYNCHRONOUSLY and BEFORE the
+       Flutter engine so window.PasskeyAuthenticator exists by the time the
+       web plugin's registerWith() runs — otherwise it calls window.close()
+       and the app dies right after booting. Self-hosted (not the GitHub
+       release URL) because GitHub serves it as application/octet-stream with
+       nosniff, which Edge/Chrome refuse to execute. -->
+  <script src="passkeys_bundle.js" type="application/javascript"></script>
 
-  <!-- Bootstrap the Flutter engine -->
-  <script src="flutter_bootstrap.js" async</script>
+  <!-- Bootstrap the Flutter engine. The opening tag MUST be properly
+       closed (async></script>) — a missing ">" makes the browser swallow
+       flutter_bootstrap.js and the app never boots, leaving only the
+       #0175C2 body background visible. -->
+  <script src="flutter_bootstrap.js" async></script>
 
   <!-- Visible fallback while Flutter initialises -->
   <div id="boot-loader">
-    <div class="spinner</div>
+    <div class="spinner"></div>
     <div>Loading VCloud…</div>
  </div>
 

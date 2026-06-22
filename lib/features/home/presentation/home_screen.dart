@@ -15,11 +15,6 @@ class HomeScreen extends ConsumerWidget {
 
     return AppScaffold(
       title: 'VCloud',
-      currentIndex: 0,
-      onTabSelected: (i) {
-        const paths = ['/home', '/chat', '/attendance', '/timesheet', '/tickets'];
-        if (i >= 0 && i < paths.length) context.go(paths[i]);
-      },
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
